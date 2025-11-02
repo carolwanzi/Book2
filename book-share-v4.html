@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>小柠檬读绘本助手</title>
+  <meta name="description" content="绘本价值放大器：共读建议、页面级技巧、延伸活动" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      background: #f3f5f9;
+      color: #333;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 12px; }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; padding: 18px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .header h1 { margin: 0; font-size: 20px; }
+    .history-btn {
+      background: rgba(255,255,255,0.2); color: #fff; border: none;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    }
+    .section { margin-top: 12px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .input-card { padding: 12px; }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+    .tab { background: transparent; border: none; padding: 10px 12px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+    .tab.active { color: #4f46e5; border-color: #4f46e5; }
+    .input-pane { display: none; }
+    .input-pane.active { display: block; }
+    .text-input { width: 100%; min-height: 110px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
+    .submit-btn {
+      margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-size: 16px; cursor: pointer;
+    }
+    .results { display: grid; grid-template-columns: 300px 1fr; gap: 12px; padding: 12px; }
+    .catalog { background: #fff; border-radius: 12px; padding: 12px; height: 520px; overflow: auto; }
+    .catalog-title { font-weight: 600; margin-bottom: 8px; }
+    .catalog-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #f0f0f0; margin-bottom: 8px;
+    }
+    .catalog-item.active { background: #f5f7ff; border-color: #cbd5ff; color: #4f46e5; }
+    .content { background: #fff; border-radius: 12px; padding: 14px; height: 520px; overflow: auto; }
+    .book-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #222; }
+    .content-section { border-top: 1px solid #f0f0f0; padding: 12px 4px; }
+    .content-section:first-child { border-top: none; }
+    .section-title { font-weight: 700; margin-bottom: 8px; color: #4f46e5; display: flex; align-items: center; gap: 6px; }
+    .info { background: #f8fafc; border: 1px solid #eef2ff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    .skills { display: grid; gap: 8px; }
+    .skill { padding: 10px; background: #f9fafb; border: 1px solid #eee; border-left: 3px solid #667eea; border-radius: 8px; }
+    .recommendations { display: flex; gap: 8px; flex-wrap: wrap; }
+    .rec-btn { padding: 8px 12px; border: none; border-radius: 18px; background: #4f46e5; color: #fff; cursor: pointer; }
+    .tips-trigger { margin-top: 6px; display: inline-flex; gap: 6px; align-items: center; background: #10b981; border: none; color: #fff; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+    .empty { text-align: center; color: #999; padding: 60px 0; }
+    /* 历史侧栏 */
+    .history-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; z-index: 50; }
+    .history-overlay.active { display: block; }
+    .history-panel { position: fixed; top: 0; right: -360px; width: 340px; height: 100vh; background: #fff; box-shadow: -2px 0 12px rgba(0,0,0,0.1); border-left: 1px solid #eee; z-index: 60; transition: right .25s; display: flex; flex-direction: column; }
+    .history-panel.active { right: 0; }
+    .history-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .history-list { padding: 10px; overflow: auto; }
+    .history-item { border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
+    /* Tips 浮层 */
+    .tips-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: flex-end; justify-content: center; z-index: 100; }
+    .tips-overlay.active { display: flex; }
+    .tips-panel { width: min(920px, 100%); height: min(86vh, 820px); background: #fff; border-radius: 16px 16px 0 0; overflow: hidden; display: flex; flex-direction: column; }
+    .tips-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .tips-title { font-weight: 700; }
+    .tips-close { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; }
+    .tips-body { display: flex; flex-direction: column; min-height: 0; background: #f7f8fc; }
+    .tips-nav { display: flex; gap: 8px; overflow-x: auto; background: #fff; border-bottom: 1px solid #eef0f5; padding: 8px; }
+    .tips-nav-btn { padding: 6px 10px; font-size: 12px; border-radius: 12px; border: 1px solid #e6e8f0; background: #fff; cursor: pointer; white-space: nowrap; }
+    .tips-nav-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+    .tips-content { flex: 1; overflow: auto; padding: 12px; }
+    .tip-card { background: #fff; border: 1px solid #e9ecf2; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+    .tip-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .tip-toggle { border: 1px solid #cfd6ff; background: #f4f6ff; color: #4f46e5; border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+    .tip-body.collapsed .detail { display: none; }
+    @media (max-width: 860px) {
+      .results { grid-template-columns: 1fr; }
+      .catalog, .content { height: auto; max-height: 60vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>小柠檬读绘本助手</h1>
+      <button id="openHistory" class="history-btn"><i class="fa-solid fa-clock-rotate-left"></i> 历史</button>
+    </div>
+
+    <div class="section card input-card">
+      <div class="tabs">
+        <button class="tab active" data-tab="text">文字输入</button>
+        <button class="tab" data-tab="image">上传图片</button>
+      </div>
+      <div id="tab-text" class="input-pane active">
+        <textarea id="bookInput" class="text-input" placeholder="示例：彩虹鱼, 小黑鱼，猜猜我有多爱你"></textarea>
+        <button id="start" class="submit-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> 开始生成阅读建议</button>
+      </div>
+      <div id="tab-image" class="input-pane">
+        <div class="empty">图片识别即将上线</div>
+      </div>
+    </div>
+
+    <div class="section results" id="results" style="display:none;">
+      <div class="catalog" id="catalog">
+        <div class="catalog-title"><i class="fa-solid fa-list"></i> 目录</div>
+        <div id="catalogList"></div>
+      </div>
+      <div class="content" id="content">
+        <div class="empty">请先输入并生成</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史 -->
+  <div class="history-overlay" id="historyMask"></div>
+  <div class="history-panel" id="historyPanel">
+    <div class="history-header">
+      <strong>历史记录</strong>
+      <button id="closeHistory" class="history-btn" style="padding:6px 10px;"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- Tips 浮层 -->
+  <div class="tips-overlay" id="tipsOverlay" aria-hidden="true">
+    <div class="tips-panel" role="dialog" aria-modal="true">
+      <div class="tips-header">
+        <div class="tips-title" id="tipsTitle">页面级讲解技巧</div>
+        <button class="tips-close" id="tipsClose"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="tips-body">
+        <div class="tips-nav" id="tipsNav"></div>
+        <div class="tips-content" id="tipsContent">
+          <div class="tip-card"><div class="tip-card-header"><strong>加载中</strong></div><div>请稍候…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 工具
+      const qs = (s, el=document) => el.querySelector(s);
+      const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
+      const log = (...args) => console.log('[PBA]', ...args);
+
+      // 元素
+      const bookInput = qs('#bookInput');
+      const btnStart = qs('#start');
+      const results = qs('#results');
+      const catalogList = qs('#catalogList');
+      const content = qs('#content');
+      const openHistory = qs('#openHistory');
+      const historyPanel = qs('#historyPanel');
+      const historyMask = qs('#historyMask');
+      const closeHistory = qs('#closeHistory');
+      const historyList = qs('#historyList');
+
+      // Tabs
+      qsa('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          qsa('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          qsa('.input-pane').forEach(p => p.classList.remove('active'));
+          qs('#tab-' + tab.dataset.tab).classList.add('active');
+        });
+      });
+
+      // 历史
+      let history = safeParse(localStorage.getItem('pba_history'), []);
+      function safeParse(str, def = []) { try { return JSON.parse(str || ''); } catch { return def; } }
+      function renderHistory() {
+        historyList.innerHTML = '';
+        if (!history.length) {
+          historyList.innerHTML = '<div class="empty" style="padding:16px 0;">暂无历史</div>';
+          return;
+        }
+        history.forEach(h => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          div.innerHTML = `<div><strong>${new Date(h.time).toLocaleString()}</strong></div><div>${h.books.map(b => `<span style="display:inline-block;background:#eef2ff;color:#4f46e5;border-radius:12px;padding:2px 8px;margin-right:6px;">${b}</span>`).join('')}</div>`;
+          div.addEventListener('click', () => {
+            startSearch(h.books.join('\\n'), false);
+            toggleHistory(false);
+          });
+          historyList.appendChild(div);
+        });
+      }
+      function toggleHistory(show) {
+        historyPanel.classList.toggle('active', !!show);
+        historyMask.classList.toggle('active', !!show);
+        document.body.style.overflow = show ? 'hidden' : '';
+      }
+      openHistory.addEventListener('click', () => { renderHistory(); toggleHistory(true); });
+      closeHistory.addEventListener('click', () => toggleHistory(false));
+      historyMask.addEventListener('click', () => toggleHistory(false));
+
+      // 搜索与渲染
+      btnStart.addEventListener('click', () => {
+        const text = (bookInput.value || '').trim();
+        if (!text) { alert('请输入书目'); return; }
+        startSearch(text, true);
+      });
+
+      function splitBooks(str) {
+        return str.split(/[\\n,，;；]+/).map(s => s.trim()).filter(Boolean);
+      }
+
+      function startSearch(text, save) {
+        const books = splitBooks(text);
+        if (!books.length) { alert('未检测到有效书名'); return; }
+        log('startSearch', books);
+        results.style.display = 'grid';
+        catalogList.innerHTML = '';
+        content.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> 正在生成…</div>';
+
+        books.forEach((b, idx) => {
+          const item = document.createElement('div');
+          item.className = 'catalog-item' + (idx === 0 ? ' active' : '');
+          item.innerHTML = `<span>${b}</span><span>${idx===0 ? '已生成' : '待生成'}</span>`;
+          item.addEventListener('click', () => renderBook(b));
+          catalogList.appendChild(item);
+        });
+
+        renderBook(books[0]);
+
+        if (save) {
+          history.unshift({ time: Date.now(), books });
+          history = history.slice(0, 50);
+          localStorage.setItem('pba_history', JSON.stringify(history));
+        }
+      }
+
+      function renderBook(name) {
+        // 更新目录状态
+        qsa('.catalog-item', catalogList).forEach(el => {
+          const label = el.firstElementChild?.textContent || '';
+          el.classList.toggle('active', label === name);
+          el.lastElementChild.textContent = label === name ? '已生成' : '待生成';
+        });
+
+        const html = getBookHtml(name);
+        content.innerHTML = html;
+
+        // 绑定 Tips 触发
+        const trigger = qs('#openPageTipsBtn', content);
+        if (trigger) {
+          trigger.addEventListener('click', () => openTipsOverlay(name));
+        }
+      }
+
+      function getBookHtml(name) {
+        const rec = ['好饿的毛毛虫','猜猜我有多爱你','彩虹鱼','小黑鱼','石头汤'];
+        return `
+          <div class="book-title">${name}</div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-book-open-reader"></i> 绘本简介与主题</div>
+            <div class="info">《${name}》主题围绕分享、勇气与自我认同，通过图像节奏和留白，引导孩子感受“情绪—行动—结果”的链条。</div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-people-roof"></i> 共读建议</div>
+            <div class="skills">
+              <div class="skill">读前：一起观察封面与环衬，预测“谁遇到什么事”。</div>
+              <div class="skill">读中：遇到转折页，让孩子选择“停/继续/改写”。</div>
+              <div class="skill">读后：找生活场景做一次“小小复刻”。</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-gift"></i> 延伸活动</div>
+            <div class="info">制作“情绪色卡”，替换页面主色，讨论感受变化。</div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-books"></i> 更多书籍推荐</div>
+            <div class="recommendations">
+              ${rec.map(r => `<button class="rec-btn" data-book="${r}">${r}</button>`).join('')}
+            </div>
+          </div>
+          <div class="content-section">
+            <button id="openPageTipsBtn" class="tips-trigger"><i class="fa-solid fa-list-check"></i> 查看《${name}》的页面级讲解技巧</button>
+          </div>
+        `;
+      }
+
+      // 推荐按钮委托（防止重渲染丢失绑定）
+      content.addEventListener('click', (e) => {
+        const btn = e.target.closest('.rec-btn');
+        if (btn) {
+          const name = btn.dataset.book;
+          startSearch(name, true);
+        }
+      });
+
+      // Tips 数据与浮层
+      const SEARCH_API = {
+        enabled: false,
+        url: '',
+        method: 'POST',
+        buildBody: (bookName) => ({ bookName }),
+        mapResponse: (json) => ({
+          bookName: json.bookName || '',
+          total: Array.isArray(json.items) ? json.items.length : 0,
+          items: Array.isArray(json.items) ? json.items : []
+        })
+      };
+
+      async function fetchPageTips(bookName) {
+        if (SEARCH_API.enabled && SEARCH_API.url) {
+          try {
+            const res = await fetch(SEARCH_API.url, {
+              method: SEARCH_API.method || 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(SEARCH_API.buildBody(bookName))
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const json = await res.json();
+            const mapped = SEARCH_API.mapResponse(json);
+            if (!mapped.items?.length) throw new Error('无数据');
+            return mapped;
+          } catch (e) {
+            console.warn('接口失败，使用本地数据', e);
+          }
+        }
+        return localTips(bookName);
+      }
+
+      function localTips(bookName) {
+        const total = 14;
+        const items = Array.from({ length: total }).map((_, i) => ({
+          page: i + 1,
+          content: `观图要点：第${i+1}页留白与色块的比例变化，提示叙事张力；注意主角视线与动线。`,
+          inspire: `阅读启发：如果把这一页的背景换成夜色/阳光，故事会怎样？让孩子提出“如果…会怎样”的假设。`
+        }));
+        return { bookName, total, items };
+      }
+
+      const tipsOverlay = qs('#tipsOverlay');
+      const tipsTitle = qs('#tipsTitle');
+      const tipsNav = qs('#tipsNav');
+      const tipsContent = qs('#tipsContent');
+      const tipsClose = qs('#tipsClose');
+
+      let scrollPosition = 0;
+      function lockBody(lock) {
+        if (lock) {
+          scrollPosition = window.pageYOffset || document.documentElement.scrollTop || 0;
+          document.body.style.top = `-${scrollPosition}px`;
+          document.body.style.position = 'fixed';
+          document.body.style.width = '100%';
+        } else {
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          window.scrollTo(0, scrollPosition);
+        }
+      }
+
+      async function openTipsOverlay(bookName) {
+        log('openTipsOverlay', bookName);
+        tipsTitle.textContent = `《${bookName}》页面级讲解技巧`;
+        tipsNav.innerHTML = '';
+        tipsContent.innerHTML = '<div class="tip-card"><div class="tip-card-header"><strong>加载中</strong></div><div>正在获取页面级技巧…</div></div>';
+        tipsOverlay.classList.add('active');
+        tipsOverlay.setAttribute('aria-hidden', 'false');
+        lockBody(true);
+
+        const data = await fetchPageTips(bookName);
+        renderTips(data);
+      }
+      function closeTipsOverlay() {
+        tipsOverlay.classList.remove('active');
+        tipsOverlay.setAttribute('aria-hidden', 'true');
+        lockBody(false);
+      }
+      tipsClose.addEventListener('click', closeTipsOverlay);
+      tipsOverlay.addEventListener('click', (e) => {
+        if (e.target === tipsOverlay) closeTipsOverlay();
+      });
+
+      function renderTips(data) {
+        // 导航
+        tipsNav.innerHTML = data.items.map((it, idx) =>
+          `<button class="tips-nav-btn" data-target="tip-${idx+1}">第${it.page}页</button>`
+        ).join('');
+        // 内容
+        tipsContent.innerHTML = data.items.map((it, idx) => `
+          <section id="tip-${idx+1}" class="tip-card">
+            <div class="tip-card-header">
+              <strong>第${it.page}页</strong>
+              <button class="tip-toggle" data-toggle="body-${idx+1}">收起/展开</button>
+            </div>
+            <div id="body-${idx+1}" class="tip-body">
+              <div class="sub"><strong>内容要点</strong></div>
+              <div class="detail" style="margin:6px 0 8px;">${escapeHTML(it.content)}</div>
+              <div class="sub"><strong>阅读启发</strong></div>
+              <div class="detail">${escapeHTML(it.inspire)}</div>
+            </div>
+          </section>
+        `).join('');
+
+        // 绑定：导航滚动
+        qsa('.tips-nav-btn', tipsNav).forEach(btn => {
+          btn.addEventListener('click', () => {
+            qsa('.tips-nav-btn', tipsNav).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const id = btn.getAttribute('data-target');
+            const target = qs('#' + id, tipsContent);
+            if (!target) return;
+            const top = target.offsetTop - 6;
+            tipsContent.scrollTo({ top, behavior: 'smooth' });
+          });
+        });
+
+        // 绑定：折叠
+        qsa('.tip-toggle', tipsContent).forEach(tg => {
+          tg.addEventListener('click', () => {
+            const id = tg.getAttribute('data-toggle');
+            const body = qs('#' + id, tipsContent);
+            if (body) body.classList.toggle('collapsed');
+          });
+        });
+      }
+
+      function escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // 开箱即用：自动填充示例并生成，确保预览必有结果
+      bookInput.value = '小黑鱼, 猜猜我有多爱你';
+      btnStart.click();
+    });
+  </script>
+</body>
+</html>
