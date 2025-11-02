@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>小柠檬读绘本助手</title>
+  <meta name="description" content="绘本价值放大器：共读建议、页面级技巧、延伸活动" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      background: #f3f5f9;
+      color: #333;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 12px; }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; padding: 16px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .header h1 { margin: 0; font-size: 20px; }
+    .history-btn {
+      background: rgba(255,255,255,0.2); color: #fff; border: none;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    }
+    .section { margin-top: 12px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .input-card { padding: 12px; }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+    .tab { background: transparent; border: none; padding: 10px 12px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+    .tab.active { color: #4f46e5; border-color: #4f46e5; }
+    .input-pane { display: none; }
+    .input-pane.active { display: block; }
+    .text-input { width: 100%; min-height: 110px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
+    .submit-btn {
+      margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-size: 16px; cursor: pointer;
+    }
+
+    /* 结果区域布局：两列分离滚动，避免互相影响 */
+    .results {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+    .catalog {
+      background: #fff; border-radius: 12px; padding: 12px;
+      height: calc(100vh - 260px); /* 头部+输入区后剩余空间 */
+      overflow: auto;
+    }
+    .catalog-title { font-weight: 600; margin-bottom: 8px; }
+    .catalog-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #f0f0f0; margin-bottom: 8px;
+    }
+    .catalog-item.active { background: #f5f7ff; border-color: #cbd5ff; color: #4f46e5; }
+    .content {
+      background: #fff; border-radius: 12px; padding: 14px;
+      height: calc(100vh - 260px);
+      overflow: auto;
+    }
+    .book-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #222; }
+    .content-section { border-top: 1px solid #f0f0f0; padding: 12px 4px; }
+    .content-section:first-child { border-top: none; }
+    .section-title { font-weight: 700; margin-bottom: 8px; color: #4f46e5; display: flex; align-items: center; gap: 6px; }
+    .info { background: #f8fafc; border: 1px solid #eef2ff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    .skills { display: grid; gap: 8px; }
+    .skill { padding: 10px; background: #f9fafb; border: 1px solid #eee; border-left: 3px solid #667eea; border-radius: 8px; }
+    .recommendations { display: flex; gap: 8px; flex-wrap: wrap; }
+    .rec-btn { padding: 8px 12px; border: none; border-radius: 18px; background: #4f46e5; color: #fff; cursor: pointer; }
+
+    .empty { text-align: center; color: #999; padding: 40px 0; }
+
+    /* 历史侧栏 */
+    .history-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; z-index: 50; }
+    .history-overlay.active { display: block; }
+    .history-panel { position: fixed; top: 0; right: -360px; width: 340px; height: 100vh; background: #fff; box-shadow: -2px 0 12px rgba(0,0,0,0.1); border-left: 1px solid #eee; z-index: 60; transition: right .25s; display: flex; flex-direction: column; }
+    .history-panel.active { right: 0; }
+    .history-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .history-list { padding: 10px; overflow: auto; }
+    .history-item { border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
+
+    /* Tips 弹窗：居中 + 自适应 */
+    .tips-overlay {
+      position: fixed; inset: 0;
+      display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+    }
+    .tips-overlay.active { display: flex; }
+    .tips-panel {
+      width: min(920px, 92vw);
+      max-height: 80vh;
+      background: #fff; border-radius: 16px;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+    .tips-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .tips-title { font-weight: 700; }
+    .tips-close { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; }
+    .tips-body { display: flex; flex-direction: column; min-height: 0; background: #f7f8fc; }
+    .tips-nav { display: flex; gap: 8px; overflow-x: auto; background: #fff; border-bottom: 1px solid #eef0f5; padding: 8px; }
+    .tips-nav-btn { padding: 6px 10px; font-size: 12px; border-radius: 12px; border: 1px solid #e6e8f0; background: #fff; cursor: pointer; white-space: nowrap; }
+    .tips-nav-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+    .tips-content { flex: 1; overflow: auto; padding: 12px; }
+    .tip-card { background: #fff; border: 1px solid #e9ecf2; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+    .tip-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .tip-page { font-weight: 600; color: #333; }
+
+    /* 响应式断点：中小屏改为一列，避免拥挤和留白 */
+    @media (max-width: 1024px) {
+      .results { grid-template-columns: 1fr; }
+      .catalog { height: auto; max-height: 40vh; }
+      .content { height: auto; }
+    }
+    @media (max-width: 640px) {
+      .header h1 { font-size: 18px; }
+      .submit-btn { font-size: 15px; }
+      .catalog-item { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>小柠檬读绘本助手</h1>
+      <button id="openHistory" class="history-btn"><i class="fa-solid fa-clock-rotate-left"></i> 历史</button>
+    </div>
+
+    <div class="section card input-card">
+      <div class="tabs">
+        <button class="tab active" data-tab="text">文字输入</button>
+        <button class="tab" data-tab="image">上传图片</button>
+      </div>
+      <div id="tab-text" class="input-pane active">
+        <textarea id="bookInput" class="text-input" placeholder="示例：彩虹鱼, 小黑鱼，猜猜我有多爱你"></textarea>
+        <button id="start" class="submit-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> 开始生成阅读建议</button>
+      </div>
+      <div id="tab-image" class="input-pane">
+        <div class="empty">图片识别即将上线</div>
+      </div>
+    </div>
+
+    <div class="section results" id="results" style="display:none;">
+      <div class="catalog" id="catalog">
+        <div class="catalog-title"><i class="fa-solid fa-list"></i> 目录</div>
+        <div id="catalogList"></div>
+      </div>
+      <div class="content" id="content">
+        <div class="empty">请先输入并生成</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史 -->
+  <div class="history-overlay" id="historyMask"></div>
+  <div class="history-panel" id="historyPanel">
+    <div class="history-header">
+      <strong>历史记录</strong>
+      <button id="closeHistory" class="history-btn" style="padding:6px 10px;"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- Tips 浮层（居中） -->
+  <div class="tips-overlay" id="tipsOverlay" aria-hidden="true">
+    <div class="tips-panel" role="dialog" aria-modal="true">
+      <div class="tips-header">
+        <div class="tips-title" id="tipsTitle">页面级讲解技巧</div>
+        <button class="tips-close" id="tipsClose"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="tips-body">
+        <div class="tips-nav" id="tipsNav"></div>
+        <div class="tips-content" id="tipsContent">
+          <div class="tip-card"><div class="tip-card-header"><strong>加载中</strong></div><div>请稍候…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const qs = (s, el=document) => el.querySelector(s);
+      const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+      const bookInput = qs('#bookInput');
+      const btnStart = qs('#start');
+      const results = qs('#results');
+      const catalogList = qs('#catalogList');
+      const content = qs('#content');
+      const openHistory = qs('#openHistory');
+      const historyPanel = qs('#historyPanel');
+      const historyMask = qs('#historyMask');
+      const closeHistory = qs('#closeHistory');
+      const historyList = qs('#historyList');
+
+      // 富数据字典：为常见绘本提供差异化内容
+      const BOOK_DB = {
+        '小黑鱼': {
+          theme: '团结与勇气，个体与群体的关系',
+          intro: '小黑鱼讲述一条与众不同的小鱼在海洋中与伙伴合作、战胜恐惧的故事。图像以海洋色系与留白构成“静-动”的节奏。',
+          read: [
+            '读前：找海洋元素（波纹、海藻、岩洞），预测小黑鱼会遇到什么；提问“为什么是黑色？”引出身份与差异。',
+            '读中：到“大家组成一条大鱼”的段落，请孩子观察“形状如何拼出力量”，让孩子摆放小物件进行复现。',
+            '读后：做一次合作挑战（拼图/搭建），反思“合作让我们变得怎样”。'
+          ],
+          extend: '用剪纸做“鱼群拼图”，尝试不同排列，看整体形状的变化与力量感。',
+          pages: 12,
+          pageTips: (i) => ({
+            content: `观察第${i}页的画面构成：海藻/岩洞与鱼群的对比，黑与彩的关系提示“独特与融入”。`,
+            inspire: `如果把第${i}页的鱼群换成其他形状，会发生什么？试着让孩子拼出新的队形并讲述理由。`
+          }),
+          rec: ['彩虹鱼','石头汤','好饿的毛毛虫']
+        },
+        '彩虹鱼': {
+          theme: '分享与自我认同',
+          intro: '彩虹鱼拥有闪亮的鳞片，经历从自我到分享的转变。画面通过高光与冷暖对比表现情绪的起伏。',
+          read: [
+            '读前：数一数彩虹鳞片，讨论“拥有与分享”的期待。',
+            '读中：在“送出第一片鳞片”停顿，追问感受变化；让孩子描述脸部表情与水的颜色变化。',
+            '读后：做“分享清单”，实践把时间/物品/帮助分享给他人。'
+          ],
+          extend: '制作“情绪色卡”，让孩子用颜色表达分享前后的心情，并贴在书签上。',
+          pages: 10,
+          pageTips: (i) => ({
+            content: `第${i}页聚焦光泽与水纹效果。比较鳞片明暗与周围小鱼表情，理解“被看见/被接纳”。`,
+            inspire: `如果把这页的高光变弱，故事气氛会如何？让孩子尝试在白纸上用不同深浅的蓝色表现情绪。`
+          }),
+          rec: ['小黑鱼','猜猜我有多爱你','石头汤']
+        },
+        '猜猜我有多爱你': {
+          theme: '表达与回应的爱',
+          intro: '小兔子与大兔子用“比较”的游戏表达爱意，图文节奏温柔，留白与边框指示亲密的空间。',
+          read: [
+            '读前：看看封面姿势，猜测谁会先发起“比较”。',
+            '读中：每出现一个新的比较（手臂、步子、跳跃）就让孩子用身体表演并描述感觉。',
+            '读后：写“今天我想对你说的爱”，把具体行为加入（拥抱、等待、分享）。'
+          ],
+          extend: '做“爱心刻度尺”，孩子用卡纸刻度表示今天的爱有多长。',
+          pages: 14,
+          pageTips: (i) => ({
+            content: `第${i}页常用留白与柔色，观察角色的距离变化与肢体语言，理解亲密的升级。',
+            inspire: `把这页场景换成夜色或月光，小兔子的动作会如何变化？让孩子尝试加“时间与光线”因素讲述。`
+          }),
+          rec: ['彩虹鱼','好饿的毛毛虫','石头汤']
+        },
+        '好饿的毛毛虫': {
+          theme: '成长与节律',
+          intro: '从毛毛虫到蝴蝶的蜕变，周节律（星期/食物/洞）构成重复与变化的阅读乐趣。',
+          read: [
+            '读前：预测“每天吃什么”，建立节律期待。',
+            '读中：在“肚子疼”处停顿，讨论节制与选择；让孩子数洞洞并比较大小变化。',
+            '读后：做一周饮食计划表，练习有节律的生活。'
+          ],
+          extend: '用圆点贴纸模拟“吃过的痕迹”，记录一周的饮食和心情。',
+          pages: 12,
+          pageTips: (i) => ({
+            content: `第${i}页关注洞洞与数字，比较重复元素带来的节律感与成长线索。`,
+            inspire: `如果把某一天的食物换掉，结局会怎样？让孩子设计“新一周菜单”。`
+          }),
+          rec: ['彩虹鱼','石头汤','小黑鱼']
+        }
+      };
+
+      function splitBooks(str) {
+        return str.split(/[\\n,,，;；]+/).map(s => s.trim()).filter(Boolean);
+      }
+
+      btnStart.addEventListener('click', () => {
+        const text = (bookInput.value || '').trim();
+        if (!text) { alert('请输入书目'); return; }
+        startSearch(text, true);
+      });
+
+      function startSearch(text, save) {
+        const books = splitBooks(text);
+        if (!books.length) { alert('未检测到有效书名'); return; }
+        results.style.display = 'grid';
+        catalogList.innerHTML = '';
+        content.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> 正在生成…</div>';
+
+        books.forEach((b, idx) => {
+          const item = document.createElement('div');
+          item.className = 'catalog-item' + (idx === 0 ? ' active' : '');
+          item.innerHTML = `<span>${b}</span><span>${idx===0 ? '已生成' : '待生成'}</span>`;
+          item.addEventListener('click', () => renderBook(b));
+          catalogList.appendChild(item);
+        });
+
+        renderBook(books[0]);
+
+        if (save) {
+          let history = safeParse(localStorage.getItem('pba_history'), []);
+          history.unshift({ time: Date.now(), books });
+          history = history.slice(0, 50);
+          localStorage.setItem('pba_history', JSON.stringify(history));
+        }
+      }
+
+      function renderBook(name) {
+        qsa('.catalog-item', catalogList).forEach(el => {
+          const label = el.firstElementChild?.textContent || '';
+          el.classList.toggle('active', label === name);
+          el.lastElementChild.textContent = label === name ? '已生成' : '待生成';
+        });
+
+        const html = getBookHtml(name);
+        content.innerHTML = html;
+
+        const trigger = qs('#openPageTipsBtn', content);
+        if (trigger) trigger.addEventListener('click', () => openTipsOverlay(name));
+      }
+
+      function getBookHtml(name) {
+        const data = BOOK_DB[name] || buildDefaultData(name);
+        const recHtml = (data.rec || []).map(r => `<button class="rec-btn" data-book="${r}">${r}</button>`).join('');
+        const readHtml = (data.read || []).map(t => `<div class="skill">${t}</div>`).join('');
+        return `
+          <div class="book-title">${name}</div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-book-open-reader"></i> 绘本简介与主题</div>
+            <div class="info">主题：${data.theme}</div>
+            <div class="info">${data.intro}</div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-people-roof"></i> 共读建议</div>
+            <div class="skills">${readHtml}</div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-gift"></i> 延伸活动</div>
+            <div class="info">${data.extend}</div>
+          </div>
+          <div class="content-section">
+            <div class="section-title"><i class="fa-solid fa-books"></i> 更多书籍推荐</div>
+            <div class="recommendations">${recHtml}</div>
+          </div>
+          <div class="content-section">
+            <button id="openPageTipsBtn" class="tips-trigger"><i class="fa-solid fa-list-check"></i> 查看《${name}》的页面级讲解技巧</button>
+          </div>
+        `;
+      }
+
+      function buildDefaultData(name) {
+        // 默认策略：根据书名生成不重复的主题关键词与文案
+        const key = Array.from(name).reduce((s,c)=>s+c.charCodeAt(0),0);
+        const themes = ['勇气与选择','关系与表达','分享与互助','观察与想象','节律与成长'];
+        const t = themes[key % themes.length];
+        return {
+          theme: t,
+          intro: `《${name}》通过图像节奏与留白，呈现${t}的旅程。建议关注角色视线、动作与环境颜色的变化。`,
+          read: [
+            `读前：从封面与环衬提取线索，预测谁遇到什么事以及可能的解决方式。`,
+            `读中：在转折处让孩子选择“停/继续/改写”，并描述角色的感受变化。`,
+            `读后：结合生活场景做一次“小小复刻”，把故事策略应用到真实问题。`
+          ],
+          extend: '制作“情绪色卡”，替换页面主色，讨论感受变化与原因。',
+          pages: 12,
+          pageTips: (i) => ({
+            content: `第${i}页关注画面留白与色块比例，观察视线与动线所带来的叙事张力。`,
+            inspire: `把这页的背景换成夜色/阳光，故事气氛会如何？请孩子提出“如果…会怎样”的假设。`
+          }),
+          rec: ['小黑鱼','彩虹鱼','石头汤']
+        };
+      }
+
+      // 推荐按钮委托
+      content.addEventListener('click', (e) => {
+        const btn = e.target.closest('.rec-btn');
+        if (btn) {
+          const name = btn.dataset.book;
+          startSearch(name, true);
+        }
+      });
+
+      // 历史
+      function safeParse(str, def = []) { try { return JSON.parse(str || ''); } catch { return def; } }
+      function renderHistory() {
+        const history = safeParse(localStorage.getItem('pba_history'), []);
+        historyList.innerHTML = '';
+        if (!history.length) {
+          historyList.innerHTML = '<div class="empty" style="padding:16px 0;">暂无历史</div>';
+          return;
+        }
+        history.forEach(h => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          div.innerHTML = `<div><strong>${new Date(h.time).toLocaleString()}</strong></div><div>${h.books.map(b => `<span style="display:inline-block;background:#eef2ff;color:#4f46e5;border-radius:12px;padding:2px 8px;margin-right:6px;">${b}</span>`).join('')}</div>`;
+          div.addEventListener('click', () => {
+            startSearch(h.books.join('\\n'), false);
+            toggleHistory(false);
+          });
+          historyList.appendChild(div);
+        });
+      }
+      function toggleHistory(show) {
+        historyPanel.classList.toggle('active', !!show);
+        historyMask.classList.toggle('active', !!show);
+        document.body.style.overflow = show ? 'hidden' : '';
+      }
+      openHistory.addEventListener('click', () => { renderHistory(); toggleHistory(true); });
+      closeHistory.addEventListener('click', () => toggleHistory(false));
+      historyMask.addEventListener('click', () => toggleHistory(false));
+
+      // Tips 弹窗逻辑（居中 + 全内容展示）
+      const tipsOverlay = qs('#tipsOverlay');
+      const tipsTitle = qs('#tipsTitle');
+      const tipsNav = qs('#tipsNav');
+      const tipsContent = qs('#tipsContent');
+      const tipsClose = qs('#tipsClose');
+
+      async function openTipsOverlay(bookName) {
+        tipsTitle.textContent = `《${bookName}》页面级讲解技巧`;
+        tipsNav.innerHTML = '';
+        tipsContent.innerHTML = '<div class="tip-card"><div class="tip-card-header"><strong>加载中</strong></div><div>正在获取页面级技巧…</div></div>';
+        tipsOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden'; // 锁滚动
+
+        const data = await fetchPageTips(bookName);
+        renderTips(data);
+      }
+      function closeTipsOverlay() {
+        tipsOverlay.classList.remove('active');
+        document.body.style.overflow = ''; // 解锁滚动
+      }
+      tipsClose.addEventListener('click', closeTipsOverlay);
+      tipsOverlay.addEventListener('click', (e) => {
+        if (e.target === tipsOverlay) closeTipsOverlay();
+      });
+
+      async function fetchPageTips(bookName) {
+        // 这里仍保留接口拓展点，当前使用本地生成
+        const data = BOOK_DB[bookName] || buildDefaultData(bookName);
+        const items = Array.from({ length: data.pages }).map((_, i) => {
+          const p = i + 1;
+          const t = data.pageTips(p);
+          return { page: p, content: t.content, inspire: t.inspire };
+        });
+        return { bookName, total: items.length, items };
+      }
+
+      function renderTips(data) {
+        tipsNav.innerHTML = data.items.map((it, idx) =>
+          `<button class="tips-nav-btn" data-target="tip-${idx+1}">第${it.page}页</button>`
+        ).join('');
+
+        // 去掉“收起/展开”，完整展示每页内容
+        tipsContent.innerHTML = data.items.map((it, idx) => `
+          <section id="tip-${idx+1}" class="tip-card">
+            <div class="tip-card-header">
+              <span class="tip-page">第${it.page}页</span>
+            </div>
+            <div class="tip-body">
+              <div class="sub"><strong>内容要点</strong></div>
+              <div class="detail" style="margin:6px 0 8px;">${escapeHTML(it.content)}</div>
+              <div class="sub"><strong>阅读启发</strong></div>
+              <div class="detail">${escapeHTML(it.inspire)}</div>
+            </div>
+          </section>
+        `).join('');
+
+        qsa('.tips-nav-btn', tipsNav).forEach(btn => {
+          btn.addEventListener('click', () => {
+            qsa('.tips-nav-btn', tipsNav).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const id = btn.getAttribute('data-target');
+            const target = qs('#' + id, tipsContent);
+            if (!target) return;
+            const top = target.offsetTop - 6;
+            tipsContent.scrollTo({ top, behavior: 'smooth' });
+          });
+        });
+      }
+
+      function escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // 开箱即用：自动填充示例并生成
+      bookInput.value = '小黑鱼, 猜猜我有多爱你';
+      btnStart.click();
+    });
+  </script>
+</body>
+</html>
