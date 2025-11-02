@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>小柠檬读绘本助手</title>
+    <meta name="description" content="让绘本发挥更大的价值">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --vh: 1vh; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: calc(var(--vh, 1vh) * 100);
+            padding: 10px;
+            color: #333;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; width: 100%; }
+        /* 头部 */
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 40px 30px; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .header-left { display: flex; flex-direction: column; gap: 8px; min-width: 240px; flex: 1; }
+        .header-title-row { display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 6px; font-weight: 600; display: inline-flex; align-items: center; }
+        .header p { font-size: 1.05em; opacity: 0.95; }
+        .header-actions { display: flex; align-items: center; gap: 14px; }
+        .history-btn {
+            background: rgba(255, 255, 255, 0.2); color: #fff; border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px; border-radius: 25px; cursor: pointer; font-size: 15px; font-weight: 500;
+            display: flex; align-items: center; gap: 8px; transition: all 0.3s;
+        }
+        .history-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+        .header-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.9); background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,0.12); flex-shrink: 0; }
+        /* 输入区域 */
+        .input-section { padding: 40px 30px; background: #fafafa; }
+        .input-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
+        .tab { padding: 12px 24px; background: transparent; border: none; cursor: pointer; font-size: 16px; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; }
+        .tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab:hover { color: #667eea; }
+        .input-content { display: none; }
+        .input-content.active { display: block; }
+        .text-input { width: 100%; padding: 15px 20px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; min-height: 120px; resize: vertical; background-color: #fff; transition: all 0.3s; }
+        .text-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .submit-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;
+            border: none; border-radius: 12px; font-size: 18px; font-weight: 500; cursor: pointer; margin-top: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
+        /* 图片上传占位卡片 */
+        .upload-placeholder {
+            border: 2px dashed #c9d4ff;
+            border-radius: 12px;
+            background: #fff;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #98a2b3;
+            padding: 24px;
+        }
+        .upload-placeholder .icon {
+            font-size: 40px;
+            color: #c0c6dc;
+            margin-bottom: 12px;
+        }
+        .upload-placeholder .title {
+            color: #98a2b3;
+            font-size: 16px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        .upload-placeholder .desc {
+            color: #b3b9c9;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        /* 结果区域 */
+        .results-section { display: none; padding: 30px; }
+        .results-section.active { display: block; }
+        .catalog-container { background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 30px; max-height: 300px; overflow-y: auto; }
+        .catalog-title { font-size: 20px; font-weight: 600; margin-bottom: 15px; color: #333; display: flex; align-items: center; gap: 10px; }
+        .catalog-list { display: flex; flex-direction: column; gap: 10px; }
+        .catalog-item { padding: 12px 18px; background: #fff; border-radius: 8px; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; display: flex; align-items: center; justify-content: space-between; }
+        .catalog-item:hover { background: #f0f4ff; border-color: #667eea; }
+        .catalog-item.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-color: #667eea; }
+        .catalog-item-name { font-weight: 500; flex: 1; }
+        .catalog-item-status { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.2); }
+        .content-area { background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .book-title { font-size: 28px; font-weight: 600; color: #333; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #667eea; display: flex; align-items: center; gap: 12px; }
+        .book-content { line-height: 1.8; color: #555; font-size: 16px; }
+        .content-section { margin-bottom: 40px; padding-bottom: 30px; border-bottom: 2px solid #f0f0f0; }
+        .section-title { color: #667eea; font-size: 22px; font-weight: 600; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 3px solid #667eea; display: flex; align-items: center; gap: 10px; }
+        .info-block { background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #667eea; transition: all 0.3s; }
+        .info-block:hover { background: #f0f4ff; transform: translateX(5px); }
+        .info-title { color: #333; font-size: 18px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .info-text { color: #555; line-height: 1.8; margin: 0; font-size: 15px; }
+        .skill-block { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e9ecef; }
+        .skill-title { color: #764ba2; font-size: 18px; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+        .skill-list { list-style: none; padding: 0; margin: 0; }
+        .skill-item { padding: 12px 15px; margin-bottom: 10px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #667eea; line-height: 1.6; color: #444; transition: all 0.3s; }
+        .skill-item:hover { background: #f0f4ff; transform: translateX(5px); }
+        .recommendations { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
+        .recommendation-btn {
+            padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 25px;
+            cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        .recommendation-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .note-box { margin-top: 30px; padding: 18px 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px; color: #856404; line-height: 1.6; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state i { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
+        /* 分享按钮 */
+        .share-buttons { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        .share-btn {
+            width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; border: none; cursor: pointer; font-size: 20px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+        }
+        .share-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
+        /* 响应式 */
+        @media (max-width: 768px) {
+            body { padding: 5px; }
+            .container { border-radius: 10px; }
+            .header { padding: 25px 15px; }
+            .header h1 { font-size: 1.6em; }
+            .header-content { flex-direction: column; align-items: stretch; gap: 12px; }
+            .header-actions { justify-content: space-between; }
+            .history-btn { padding: 8px 16px; font-size: 14px; min-width: 80px; }
+            .input-section, .results-section { padding: 15px; }
+            .tab { padding: 10px 16px; font-size: 14px; flex: 1; text-align: center; }
+            .text-input { font-size: 16px !important; min-height: 100px; }
+            .submit-btn { padding: 14px; font-size: 16px; }
+            .catalog-container { max-height: 180px; padding: 15px; margin-bottom: 20px; }
+            .book-title { font-size: 22px; }
+            .section-title { font-size: 18px; }
+            .header-avatar { width: 48px; height: 48px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 0; }
+            .container { border-radius: 0; min-height: 100vh; }
+            .header { padding: 20px 12px; }
+            .header h1 { font-size: 1.4em; }
+            .input-section, .results-section { padding: 12px; }
+            .tab { padding: 8px 12px; font-size: 13px; }
+            .text-input { min-height: 90px; }
+            .catalog-container { max-height: 150px; padding: 12px; }
+            .content-area { padding: 15px 12px; }
+            .header-avatar { width: 44px; height: 44px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-title-row">
+                        <img class="header-avatar" src="https://d41chssnpqdne.cloudfront.net/user_upload_by_module/chat_bot/files/58128693/BNh5pzBcRhWs2F2M.png?Expires=1763278656&Signature=fNIp8ZkZZINZnvKFGn~n94v0NUVnu9L5R0CAoWKKrfOUgA~cnhSDq7CwkWsay7~05LOtDSdPIRaRw8LKPh~VVP9beyk-zzp89O-JT4vWjK~tpTBIop0lQZz359MPWfBDemXSDPGzqlRrNl1pVTIebOY9SCTSb~2K77P6YqT5reN~mOPNQcoEgONfNiDhQtb~FwbN074ngGg1twbiH1oexeZU83xo98zfu0JqiujNHPD-81Gjakbn-Ifx5CsrDiyl~vKN7PSQRAddUsTjDvP8lsteXrTIkdE88MogjiiBHi8z2WA4hIak2x~jInEkOO7I3ddRJuNqdWfTMFHOR2jZ-w__&Key-Pair-Id=K3USGZIKWMDCSX" alt="头像">
+                        <h1>小柠檬读绘本助手</h1>
+                    </div>
+                    <p>让绘本发挥更大的价值</p>
+                    <div class="header-actions">
+                        <button class="history-btn" id="openHistoryBtn">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            查看历史
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="input-section">
+            <div class="input-tabs">
+                <button class="tab active" data-tab="text"><i class="fa-regular fa-keyboard"></i> 文字输入</button>
+                <button class="tab" data-tab="image"><i class="fa-regular fa-image"></i> 上传图片</button>
+            </div>
+            <div class="input-content active" id="textTab">
+                <textarea class="text-input" id="bookInput" placeholder="请输入或粘贴绘本书目，每行一本；例如：\n彩虹鱼\n小熊可可的故事\n..."></textarea>
+                <button class="submit-btn" id="startBtn"><i class="fa-solid fa-wand-magic-sparkles"></i>开始生成阅读建议</button>
+            </div>
+            <div class="input-content" id="imageTab">
+                <div class="upload-placeholder">
+                    <div>
+                        <div class="icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="title">即将上线，敬请期待</div>
+                        <div class="desc">图片识别功能正在开发中，敬请期待</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section" id="resultsSection">
+            <div class="catalog-container" id="catalogContainer">
+                <div class="catalog-title"><i class="fa-solid fa-list"></i>目录</div>
+                <div class="catalog-list" id="catalogList"></div>
+            </div>
+            <div class="content-area">
+                <div class="book-title" id="currentBookTitle">尚未选择书目</div>
+                <div id="bookContent" class="book-content">
+                    <div class="empty-state">
+                        <i class="fa-regular fa-face-smile"></i>
+                        <p>生成后在此展示绘本阅读建议、亲子互动、延伸活动与更多书籍推荐。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 历史侧栏 -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-panel-header">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> 历史记录</h3>
+                <button class="close-history-btn" id="closeHistoryBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="history-panel-content">
+                <div class="history-actions">
+                    <button class="clear-history-btn" id="clearHistoryBtn"><i class="fa-solid fa-trash-can"></i> 清空历史</button>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="history-empty">暂无历史记录</div>
+                </div>
+            </div>
+        </div>
+        <div class="history-overlay" id="historyOverlay"></div>
+
+        <!-- 分享按钮（示例） -->
+        <div class="share-buttons">
+            <button class="share-btn" title="复制链接" id="copyLinkBtn"><i class="fa-solid fa-link"></i></button>
+            <button class="share-btn" title="回到顶部" id="backTopBtn"><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+    </div>
+
+    <script>
+    // 工具函数
+    function qs(sel) { return document.querySelector(sel); }
+    function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
+
+    // Tab 切换
+    qsa('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            qsa('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const target = tab.dataset.tab;
+            qsa('.input-content').forEach(c => c.classList.remove('active'));
+            qs(target === 'text' ? '#textTab' : '#imageTab').classList.add('active');
+        });
+    });
+
+    // 历史侧栏
+    const openHistoryBtn = qs('#openHistoryBtn');
+    const closeHistoryBtn = qs('#closeHistoryBtn');
+    const historyPanel = qs('#historyPanel');
+    const historyOverlay = qs('#historyOverlay');
+    const clearHistoryBtn = qs('#clearHistoryBtn');
+    const historyListEl = qs('#historyList');
+    let history = JSON.parse(localStorage.getItem('lm_read_history') || '[]');
+
+    function renderHistory() {
+        historyListEl.innerHTML = '';
+        if (!history.length) {
+            historyListEl.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+            return;
+        }
+        history.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-item-header">
+                    <strong>搜索记录</strong>
+                    <span class="history-item-time">${new Date(item.time).toLocaleString()}</span>
+                </div>
+                <div class="history-item-books">
+                    ${item.books.map(b => '<span class="history-book-tag">' + b + '</span>').join('')}
+                </div>
+            `;
+            div.addEventListener('click', () => {
+                startSearch(item.books.join('\n'), false);
+                toggleHistory(false);
+            });
+            historyListEl.appendChild(div);
+        });
+    }
+    function toggleHistory(show) {
+        if (show) {
+            historyPanel.classList.add('active');
+            historyOverlay.classList.add('active');
+        } else {
+            historyPanel.classList.remove('active');
+            historyOverlay.classList.remove('active');
+        }
+    }
+    openHistoryBtn.addEventListener('click', () => { renderHistory(); toggleHistory(true); });
+    closeHistoryBtn.addEventListener('click', () => toggleHistory(false));
+    historyOverlay.addEventListener('click', () => toggleHistory(false));
+    clearHistoryBtn.addEventListener('click', () => {
+        history = [];
+        localStorage.setItem('lm_read_history', JSON.stringify(history));
+        renderHistory();
+    });
+
+    // 搜索流程
+    const startBtn = qs('#startBtn');
+    const bookInput = qs('#bookInput');
+    const resultsSection = qs('#resultsSection');
+    const catalogList = qs('#catalogList');
+    const currentBookTitle = qs('#currentBookTitle');
+    const bookContent = qs('#bookContent');
+
+    startBtn.addEventListener('click', () => {
+        const text = bookInput.value.trim();
+        if (!text) {
+            alert('请先输入书目（每行一本）');
+            return;
+        }
+        startSearch(text, true);
+    });
+
+    function startSearch(text, appendToHistory) {
+        const books = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+        catalogList.innerHTML = '';
+        currentBookTitle.textContent = '正在生成…';
+        bookContent.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>请稍候，正在整理阅读建议…</p></div>';
+        resultsSection.classList.add('active');
+
+        books.forEach((name) => {
+            const item = document.createElement('div');
+            item.className = 'catalog-item';
+            item.innerHTML = `
+                <span class="catalog-item-name">${name}</span>
+                <span class="catalog-item-status">待生成</span>
+            `;
+            item.addEventListener('click', () => renderBook(name));
+            catalogList.appendChild(item);
+        });
+
+        if (appendToHistory) {
+            history.unshift({ time: Date.now(), books });
+            history = history.slice(0, 50);
+            localStorage.setItem('lm_read_history', JSON.stringify(history));
+        }
+
+        if (books.length) renderBook(books[0]);
+    }
+
+    function searchSingleBookFlow(bookName) {
+        catalogList.innerHTML = '';
+        resultsSection.classList.add('active');
+        const item = document.createElement('div');
+        item.className = 'catalog-item active';
+        item.innerHTML = `
+            <span class="catalog-item-name">${bookName}</span>
+            <span class="catalog-item-status">已生成</span>
+        `;
+        item.addEventListener('click', () => renderBook(bookName));
+        catalogList.appendChild(item);
+        renderBook(bookName);
+    }
+
+    function renderBook(name) {
+        currentBookTitle.textContent = name;
+        bookContent.innerHTML = generateBookSections(name);
+        document.querySelectorAll('.catalog-item').forEach(el => {
+            const label = el.querySelector('.catalog-item-name').textContent;
+            el.classList.toggle('active', label === name);
+            const status = el.querySelector('.catalog-item-status');
+            if (status) status.textContent = label === name ? '已生成' : '待生成';
+        });
+    }
+
+    function generateBookSections(name) {
+        const more = ['好饿的毛毛虫','猜猜我有多爱你','小黑鱼','蚂蚁和西瓜','石头汤'];
+        return `
+            <div class="content-section">
+                <div class="section-title"><i class="fa-solid fa-book-open-reader"></i> 绘本简介与主题</div>
+                <div class="info-block">
+                    <div class="info-title"><i class="fa-solid fa-circle-info"></i> 主题</div>
+                    <p class="info-text">《${name}》围绕友爱、分享与自我成长展开，适合亲子共读。</p>
+                </div>
+                <div class="info-block">
+                    <div class="info-title"><i class="fa-solid fa-star"></i> 适读年龄</div>
+                    <p class="info-text">建议 ${Math.floor(Math.random()*4)+3}-${Math.floor(Math.random()*3)+6} 岁。</p>
+                </div>
+            </div>
+            <div class="content-section">
+                <div class="section-title"><i class="fa-solid fa-people-roof"></i> 共读建议</div>
+                <div class="skill-block">
+                    <div class="skill-title"><i class="fa-solid fa-lightbulb"></i> 读前准备</div>
+                    <ul class="skill-list">
+                        <li class="skill-item">翻看封面与插图，引导孩子预测故事内容。</li>
+                        <li class="skill-item">准备与主题相关的小物件，提升参与感。</li>
+                    </ul>
+                </div>
+                <div class="skill-block">
+                    <div class="skill-title"><i class="fa-solid fa-comments"></i> 读中互动</div>
+                    <ul class="skill-list">
+                        <li class="skill-item">用夸张语气读关键句，增强情绪共鸣。</li>
+                        <li class="skill-item">提出开放性问题：你会怎么做？为什么？</li>
+                    </ul>
+                </div>
+                <div class="skill-block">
+                    <div class="skill-title"><i class="fa-solid fa-seedling"></i> 读后延伸</div>
+                    <ul class="skill-list">
+                        <li class="skill-item">角色扮演或绘本改编，鼓励表达与创造。</li>
+                        <li class="skill-item">将故事价值迁移到生活情境中。</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="content-section">
+                <div class="section-title"><i class="fa-solid fa-gift"></i> 延伸活动</div>
+                <div class="info-block">
+                    <div class="info-title"><i class="fa-solid fa-palette"></i> 手工创作</div>
+                    <p class="info-text">与孩子一起制作主题贴纸或手偶，加深记忆。</p>
+                </div>
+                <div class="info-block">
+                    <div class="info-title"><i class="fa-solid fa-person-running"></i> 情景游戏</div>
+                    <p class="info-text">设置小任务，让孩子在游戏中实践分享与合作。</p>
+                </div>
+            </div>
+            <div class="content-section">
+                <div class="section-title"><i class="fa-solid fa-books"></i> 更多书籍推荐</div>
+                <div class="recommendations">
+                    ${more.map(b => `<button class="recommendation-btn" data-book="${b}"><i class="fa-solid fa-compass"></i> ${b}</button>`).join('')}
+                </div>
+                <div class="note-box">提示：点击上方推荐项将开始一次新的搜索，不会把书名加入输入框，也不会累积此前目录。</div>
+            </div>
+        `;
+    }
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.recommendation-btn');
+        if (btn) searchSingleBookFlow(btn.dataset.book);
+    });
+
+    qs('#copyLinkBtn').addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(location.href);
+            alert('链接已复制');
+        } catch { alert('复制失败，请手动复制地址栏链接'); }
+    });
+    qs('#backTopBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    </script>
+</body>
+</html>
