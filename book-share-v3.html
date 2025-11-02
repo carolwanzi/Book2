@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>预览测试页（可发布）</title>
+  <meta name="description" content="用于排查无法点击问题的预览测试页" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #121a2b;
+      --text: #e8edf7;
+      --muted: #9fb0d1;
+      --primary: #4da3ff;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #1f2a44;
+      --shadow: rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Noto Sans CJK", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 20% 10%, #0f1730 0%, var(--bg) 60%, #0a0f1a 100%);
+    }
+    .container {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 16px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px var(--shadow);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    h1,h2,h3 { margin: 0 0 12px; }
+    p { color: var(--muted); line-height: 1.6; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      appearance: none; border: 1px solid var(--border); color: var(--text);
+      background: #0f1830; padding: 10px 14px; border-radius: 10px; cursor: pointer;
+      transition: transform .05s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .btn:hover { background: #122042; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: #2a4f8a; background: linear-gradient(180deg, #11407e, #0e3568); }
+    .btn.accent { border-color: #1f6b3c; background: linear-gradient(180deg, #15803d, #116332); }
+    .btn.warn { border-color: #6b4a1f; background: linear-gradient(180deg, #b45309, #8a3f05); }
+    .btn.ghost { background: transparent; }
+    .input, select, .file {
+      width: 100%; max-width: 360px; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #0f1830; color: var(--text);
+      outline: none; transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .input:focus, select:focus, .file:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(77,163,255,0.25); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border:1px solid var(--border); background: #0e152a; color: var(--muted); }
+    .ok { color: var(--accent); }
+    .bad { color: var(--danger); }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"; }
+    .section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .kbd { padding:2px 6px; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; background:#0e152a; color:#cfe0ff; }
+    .hint { font-size: 13px; color: var(--muted); }
+    .footer { text-align:center; font-size: 12px; color: var(--muted); margin-top: 24px; }
+    .link {
+      color: #a8c8ff; text-decoration: underline wavy rgba(168,200,255,.35);
+      text-underline-offset: 3px; cursor: pointer;
+    }
+    /* 浮层/遮罩演示 */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(1px);
+      display: none; /* 默认关闭 */
+      z-index: 50;
+    }
+    .overlay.active { display: block; }
+    .modal {
+      position: fixed; inset: 0; display: none; z-index: 60;
+      align-items: center; justify-content: center;
+    }
+    .modal.active { display: flex; }
+    .modal .panel {
+      width: min(560px, 92vw); background: #0e162a; border:1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    }
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    .flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .switch {
+      display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+    }
+    .switch input { display:none; }
+    .switch .track {
+      width: 42px; height: 24px; border-radius: 999px; background: #22314f; position:relative; transition: background .2s;
+    }
+    .switch .thumb {
+      position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:999px; background:#cfe0ff; transition:left .2s;
+    }
+    .switch input:checked + .track { background:#2b8a3e; }
+    .switch input:checked + .track .thumb { left:21px; }
+    .callout {
+      border: 1px dashed #2b3c62; background: rgba(17,33,68,.35); padding: 10px 12px; border-radius: 10px;
+    }
+    /* 顶部固定工具条，提供“新窗口打开”避免容器拦截 */
+    .toolbar {
+      position: sticky; top: 0; z-index: 70;
+      display:flex; gap:10px; padding: 10px 12px; margin:-16px -16px 16px -16px; background: linear-gradient(180deg, rgba(10,16,28,.9), rgba(10,16,28,.65));
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card toolbar">
+      <div class="flex" style="flex:1">
+        <strong>预览工具栏</strong>
+        <span class="tag"><span>状态</span><span id="status" class="ok">可点击</span></span>
+        <span class="tag"><span>命中元素</span><span id="hit-el" class="mono muted">尚未检测</span></span>
+      </div>
+      <div class="flex">
+        <button class="btn ghost" id="open-self">在新窗口打开本页</button>
+        <button class="btn" id="check-overlay">检测是否被遮挡</button>
+        <button class="btn warn" id="toggle-fake-overlay">切换假遮罩（演示）</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>预览测试页</h1>
+      <p>这个页面用于帮助你在发布后验证“无法点击”的问题，并提供检测工具来识别是否有透明层、遮罩或样式导致的点击拦截。</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <h2>常见交互组件</h2>
+        <span class="hint">如果鼠标无法点击，尝试用 <span class="kbd">Tab</span> 和 <span class="kbd">Enter</span></span>
+      </div>
+      <div class="grid" style="margin-top:6px">
+        <div class="stack">
+          <label>文本输入</label>
+          <input class="input" id="inp" placeholder="输入点什么…" />
+        </div>
+        <div class="stack">
+          <label>选择框</label>
+          <select id="sel" class="input">
+            <option value="">请选择</option>
+            <option value="a">选项 A</option>
+            <option value="b">选项 B</option>
+            <option value="c">选项 C</option>
+          </select>
+        </div>
+        <div class="stack">
+          <label>文件上传</label>
+          <input id="file" class="file" type="file" />
+        </div>
+        <div class="stack">
+          <label>开关</label>
+          <label class="switch">
+            <input id="sw" type="checkbox" />
+            <span class="track"><span class="thumb"></span></span>
+            <span>允许交互</span>
+          </label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btn-primary">主要按钮</button>
+        <button class="btn accent" id="btn-accent">次要按钮</button>
+        <button class="btn" id="btn-modal">打开弹窗</button>
+        <a class="btn ghost" id="btn-link" href="#link-target">跳转锚点</a>
+      </div>
+    </div>
+
+    <div id="link-target" class="card">
+      <h2>锚点区域</h2>
+      <p>用于测试页面内部跳转和滚动行为。</p>
+    </div>
+
+    <div class="card">
+      <h2>诊断工具</h2>
+      <div class="stack">
+        <div class="callout">
+          <strong>命中检测：</strong>点击页面任意位置，我会显示实际命中的元素（用于判断是否有透明层挡住）。
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-outline">给命中元素描边</button>
+          <button class="btn" id="btn-clear-outline">清除描边</button>
+          <button class="btn warn" id="btn-force-pe">强制允许点击(pointer-events: auto)</button>
+          <button class="btn" id="btn-reset">重置页面</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>结果回填</h2>
+      <p>请把以下
